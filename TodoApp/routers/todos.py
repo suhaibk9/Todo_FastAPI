@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from database import SessionLocal
 from models import Todo
+from .auth import get_current_user
 
 router = APIRouter()
 
@@ -17,6 +18,7 @@ def get_db():
         db.close()
 
 
+user_dependency = Annotated[dict, Depends(get_current_user)]
 db_dependency = Annotated[Session, Depends(get_db)]
 
 
@@ -31,6 +33,14 @@ class TodoRequest(BaseModel):
 async def read_all(db: db_dependency):
     return db.query(Todo).all()
 
+@router.get("/todo/user", status_code=200)
+async def get_all_todo_by_user(db: db_dependency, user: user_dependency):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication Failed")
+    user_id = user.get("id")
+    all_todo = db.query(Todo).filter(Todo.owner_id == user_id).all()
+    return all_todo
+
 
 @router.get("/todo/{todo_id}", status_code=200)
 async def read_to_by_id(db: db_dependency, todo_id: int):
@@ -41,8 +51,10 @@ async def read_to_by_id(db: db_dependency, todo_id: int):
 
 
 @router.post("/todo", status_code=201)
-async def create_todo(todo: TodoRequest, db: db_dependency):
-    new_todo = Todo(**todo.model_dump())
+async def create_todo(todo: TodoRequest, db: db_dependency, user: user_dependency):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication Failed")
+    new_todo = Todo(**todo.model_dump(), owner_id=user.get("id"))
     db.add(new_todo)
     db.commit()
     return new_todo
@@ -64,6 +76,7 @@ async def update_todo(todo_id: int, todo: TodoRequest, db: db_dependency):
     db.refresh(todo_model)
 
     return todo_model
+
 
 
 @router.delete("/todo/{id}", status_code=204)
