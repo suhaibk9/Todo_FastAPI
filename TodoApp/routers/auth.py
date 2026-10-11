@@ -17,7 +17,8 @@ load_dotenv(dotenv_path=env_path)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 secret = os.getenv("SECRET_KEY", "9c8fe2970a49f6b50d0f63576a1b5806669fafe5b2ae54948bac5ef5e1d52aa9")
-algo = "HS256"
+algo = os.getenv("ALGORITHM", "HS256")
+access_token_expire_minutes = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "20"))
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl="auth/token")
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -29,6 +30,7 @@ class CreateUser(BaseModel):
     last_name: str
     password: str
     role: str
+    phone_number: str
 
 
 class Token(BaseModel):
@@ -66,6 +68,7 @@ async def create_user(user: CreateUser, db: db_dependency):
         last_name=user.last_name,
         role=user.role,
         hashed_password=hashed_password,
+        phone_number=user.phone_number,
         is_active=True,
     )
 
@@ -77,13 +80,13 @@ async def create_user(user: CreateUser, db: db_dependency):
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency
+        form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency
 ):
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not Allowed")
     token = create_access_token(
-        user.username, user.id, user.role, timedelta(minutes=20)
+        user.username, user.id, user.role, timedelta(minutes=access_token_expire_minutes)
     )
     return {"access_token": token, "token_type": "bearer"}
 
@@ -111,7 +114,7 @@ def authenticate_user(username: str, password: str, db: db_dependency):
 
 
 def create_access_token(
-    username: str, user_id: int, role: str, expires_delta: timedelta
+        username: str, user_id: int, role: str, expires_delta: timedelta
 ):
     encode = {"sub": username, "id": user_id, "role": role}
     expires = datetime.now(timezone.utc) + expires_delta
