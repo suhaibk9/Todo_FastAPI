@@ -3,8 +3,12 @@ from sqlalchemy.orm import Session
 from typing import Annotated
 from pydantic import BaseModel, Field
 from passlib.context import CryptContext
-from database import SessionLocal
-from models import Users
+try:
+    from ..database import SessionLocal
+    from ..models import Users
+except ImportError:
+    from database import SessionLocal
+    from models import Users
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from jose import jwt, JWTError
 from datetime import timedelta, datetime, timezone

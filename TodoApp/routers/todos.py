@@ -3,9 +3,14 @@ from sqlalchemy.orm import Session
 from typing import Annotated
 from pydantic import BaseModel, Field
 
-from database import SessionLocal
-from models import Todo
-from .auth import get_current_user
+try:
+    from ..database import SessionLocal
+    from ..models import Todo
+    from .auth import get_current_user
+except ImportError:
+    from database import SessionLocal
+    from models import Todo
+    from auth import get_current_user
 
 router = APIRouter(tags=["Todos"])
 
@@ -43,12 +48,12 @@ async def get_all_todo_by_user(db: db_dependency, user: user_dependency):
     return all_todo
 
 
-# @router.get("/todo/{todo_id}", status_code=200)
-# async def read_to_by_id(db: db_dependency, todo_id: int):
-#     todo_model = db.query(Todo).filter(Todo.id == todo_id).first()
-#     if todo_model is not None:
-#         return todo_model
-#     raise HTTPException(status_code=404, detail="Todo Doesn't Exist")
+@router.get("/todo/{todo_id}", status_code=200)
+async def read_to_by_id(db: db_dependency, todo_id: int):
+    todo_model = db.query(Todo).filter(Todo.id == todo_id).first()
+    if todo_model is not None:
+        return todo_model
+    raise HTTPException(status_code=404, detail="Todo Doesn't Exist")
 
 
 @router.post("/todo", status_code=201)
@@ -61,7 +66,7 @@ async def create_todo(todo: TodoRequest, db: db_dependency, user: user_dependenc
     return new_todo
 
 
-@router.put("/todo/{todo_id}", status_code=200)
+@router.put("/todo/{todo_id}", status_code=204)
 async def update_todo(
     todo_id: int,
     todo: TodoRequest,

@@ -3,9 +3,14 @@ from sqlalchemy.orm import Session
 from typing import Annotated
 from pydantic import BaseModel, Field
 
-from database import SessionLocal
-from models import Todo
-from .auth import get_current_user
+try:
+    from ..database import SessionLocal
+    from ..models import Todo
+    from .auth import get_current_user
+except ImportError:
+    from database import SessionLocal
+    from models import Todo
+    from auth import get_current_user
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 

@@ -4,9 +4,14 @@ from pydantic import BaseModel, Field
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from database import SessionLocal
-from models import Users
-from .auth import get_current_user
+try:
+    from ..database import SessionLocal
+    from ..models import Users
+    from .auth import get_current_user
+except ImportError:
+    from database import SessionLocal
+    from models import Users
+    from auth import get_current_user
 
 router = APIRouter(prefix="/user", tags=["user"])
 

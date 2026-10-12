@@ -21,11 +21,17 @@ from dotenv import load_dotenv
 env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
-db_url = os.getenv("DATABASE_URL")
-if db_url:
-    config.set_main_option("sqlalchemy.url", db_url)
+DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent.parent / "todosApp.db"
+DEFAULT_DB_URL = f"sqlite:///{DEFAULT_DB_PATH}"
+db_url = os.getenv("DATABASE_URL", DEFAULT_DB_URL)
+if db_url in ("sqlite:///./todosApp.db", "sqlite:///todosApp.db"):
+    db_url = DEFAULT_DB_URL
+config.set_main_option("sqlalchemy.url", db_url)
 
-from models import Base
+try:
+    from models import Base
+except ImportError:
+    from TodoApp.models import Base
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
